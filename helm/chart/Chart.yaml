@@ -1,0 +1,4 @@
+apiVersion: v2
+name: my-chart
+description: Chart de test Helm
+version: 0.1.0

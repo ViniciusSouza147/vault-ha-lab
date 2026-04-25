@@ -1,0 +1,13 @@
+# Configurações da aplicação
+app:
+  name: my-app
+  replicas: 1
+  image:
+    repository: nginx
+    tag: "1.27-alpine"
+  port: 80
+
+# Configurações do Service
+service:
+  type: ClusterIP
+  port: 80
