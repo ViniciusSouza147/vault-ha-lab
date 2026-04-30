@@ -34,46 +34,59 @@ spec:
             size: 1Gi
             storageClass: managed-csi
           dev:
-            enabled: false
+            # enabled: false
+            enabled: true
+            config: |
+              ui = true
+              
+              listener "tcp" {
+                tls_disable = 1
+                address = "[::]:8200"
+                cluster_address = "[::]:8201"
+              }
+
+              # Usando exatamente o mesmo storage do cluster antigo
+              storage "file" {
+                path = "/vault/data"
+              }
+
+              disable_mlock = true
+          # IMPORTANTE: Mudamos para standalone: true para aceitar o storage "file"
           standalone:
             enabled: false
           ha:
-            enabled: true
-            raft:
-              enabled: true
-              config: |
-                ui = true
-
-                #seal "azurekeyvault" {
-                #  tenant_id  = "267f49aa-f6b5-4421-ae85-3fddd634c31c"
-                #  vault_name = "labvaultunsealb"
-                #  key_name   = "unseal-unseal"
-                #}
-
-                listener "tcp" {
-                  tls_disable = 1
-                  address = "[::]:8200"
-                  cluster_address = "[::]:8201"
-                }
-
-                storage "raft" {
-                  path = "/vault/data"
-                  node_id = "HOSTNAME"
-                  retry_join {
-                    leader_api_addr = "http://vault-ha-0.vault-ha-internal:8200"
-                  }
-                  retry_join {
-                    leader_api_addr = "http://vault-ha-1.vault-ha-internal:8200"
-                  }
-                  retry_join {
-                    leader_api_addr = "http://vault-ha-2.vault-ha-internal:8200"
-                  }
-                }
-
-                service_registration "kubernetes" {}
-
-                disable_mlock = true
-            replicas: 3
+            enabled: false
+            #enabled: true
+            #raft:
+            #  enabled: true
+            #  config: |
+            #    ui = true
+            #    #seal "azurekeyvault" {
+            #    #  tenant_id  = "267f49aa-f6b5-4421-ae85-3fddd634c31c"
+            #    #  vault_name = "labvaultunsealb"
+            #    #  key_name   = "unseal-unseal"
+            #    #}
+            #    listener "tcp" {
+            #      tls_disable = 1
+            #      address = "[::]:8200"
+            #      cluster_address = "[::]:8201"
+            #    }
+            #    storage "file" {
+            #      path = "/vault/data"
+            #      node_id = "HOSTNAME"
+            #      retry_join {
+            #        leader_api_addr = "http://vault-ha-0.vault-ha-internal:8200"
+            #      }
+            #      retry_join {
+            #        leader_api_addr = "http://vault-ha-1.vault-ha-internal:8200"
+            #      }
+            #      retry_join {
+            #        leader_api_addr = "http://vault-ha-2.vault-ha-internal:8200"
+            #      }
+            #    }
+            #    service_registration "kubernetes" {}
+            #    disable_mlock = true
+            replicas: 1
             disruptionBudget:
               enabled: true
         ui:
