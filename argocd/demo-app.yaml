@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/ViniciusSouza147/vault-ha-lab.git'
+    targetRevision: main
+    path: helm/chart
+    helm:
+      releaseName: demo-app
+      values: |
+        app:
+          name: demo-from-argocd
+          replicas: 2
+          image:
+            repository: nginx
+            tag: "1.27-alpine"
+          port: 80
+        service:
+          type: ClusterIP
+          port: 80
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: argocd-demo
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-standalone
+  namespace: argocd
+spec:
+  project: default
+  source:
+    chart: vault
+    repoURL: 'https://helm.releases.hashicorp.com'
+    targetRevision: 0.30.1
+    helm:
+      releaseName: vault-standalone
+      values: |
+        injector:
+          enabled: false
+        server:
+          enabled: true
+          image:
+            repository: hashicorp/vault
+            tag: 1.20.1
+          dataStorage:
+            enabled: true
+            size: 1Gi
+            storageClass: managed-csi
+          standalone:
+            enabled: true
+            config: |
+              ui = true
+              listener "tcp" {
+                tls_disable = 1
+                address = "[::]:8200"
+                cluster_address = "[::]:8201"
+              }
+              storage "file" {
+                path = "/vault/data"
+              }
+              disable_mlock = true
+        ui:
+          enabled: true
+        csi:
+          enabled: false
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: vault-standalone
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

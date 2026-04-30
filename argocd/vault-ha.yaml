@@ -1,0 +1,88 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-ha
+  namespace: argocd
+spec:
+  project: default
+  source:
+    chart: vault
+    repoURL: https://helm.releases.hashicorp.com
+    targetRevision: 0.32.0
+    helm:
+      releaseName: vault-ha
+      values: |
+        global:
+          enabled: true
+          tlsDisable: true
+        injector:
+          enabled: false
+        server:
+          enabled: true
+          image:
+            repository: hashicorp/vault
+            tag: 1.21.2
+          serviceAccount:
+            create: true
+            name: vault-ha
+            annotations:
+              azure.workload.identity/client-id: "3fa90a9d-1726-4222-86e7-bb1ca62a3aca"
+          extraLabels:
+            azure.workload.identity/use: "true"
+          dataStorage:
+            enabled: true
+            size: 1Gi
+            storageClass: managed-csi
+          dev:
+            enabled: false
+          standalone:
+            enabled: false
+          ha:
+            enabled: true
+            raft:
+              enabled: true
+              config: |
+                ui = true
+
+                #seal "azurekeyvault" {
+                #  tenant_id  = "267f49aa-f6b5-4421-ae85-3fddd634c31c"
+                #  vault_name = "labvaultunsealb"
+                #  key_name   = "unseal-unseal"
+                #}
+
+                listener "tcp" {
+                  tls_disable = 1
+                  address = "[::]:8200"
+                  cluster_address = "[::]:8201"
+                }
+
+                storage "raft" {
+                  path = "/vault/data"
+                  node_id = "HOSTNAME"
+                  retry_join {
+                    leader_api_addr = "http://vault-ha-0.vault-ha-internal:8200"
+                  }
+                  retry_join {
+                    leader_api_addr = "http://vault-ha-1.vault-ha-internal:8200"
+                  }
+                  retry_join {
+                    leader_api_addr = "http://vault-ha-2.vault-ha-internal:8200"
+                  }
+                }
+
+                service_registration "kubernetes" {}
+
+                disable_mlock = true
+            replicas: 3
+            disruptionBudget:
+              enabled: true
+        ui:
+          enabled: true
+        csi:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault-ha
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
